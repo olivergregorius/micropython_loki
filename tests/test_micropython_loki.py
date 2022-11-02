@@ -1,4 +1,5 @@
 import sys
+import time
 import unittest
 from unittest.mock import Mock, patch
 
@@ -12,9 +13,12 @@ from mocks import urequests_mock
 class TestMicropythonLoki(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.loki = Loki('http://localhost:3100', [LogLabel('app', 'testapp'), LogLabel('version', '1.0.0')])
+        self.loki = Loki('http://localhost:3100', [LogLabel('app', 'testapp'), LogLabel('version', '1.0.0')], max_stack_size=5)
 
     def test_calling_log_adds_log_messages_to_stack(self):
+        self.loki.log('First DEBUG message - will be dropped due to exceeded max stack size', LogLevel.DEBUG)
+        # Ensure first log message has another timestamp than the following by waiting for 1s
+        time.sleep(1)
         self.loki.log('Testmessage DEBUG', LogLevel.DEBUG)
         self.loki.log('Testmessage INFO - default log level')
         self.loki.log('Testmessage INFO', LogLevel.INFO)

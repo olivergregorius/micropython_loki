@@ -64,13 +64,15 @@ class Loki:
     _log_labels: list[LogLabel]
     _default_log_level: LogLevel
     _log_messages: list[LogMessage]
+    _max_stack_size: int
 
-    def __init__(self, url: str, log_labels: list[LogLabel] = None, default_log_level=LogLevel.INFO, timeout=5):
+    def __init__(self, url: str, log_labels: list[LogLabel] = None, default_log_level=LogLevel.INFO, timeout=5, max_stack_size=50):
         self._url = url
         self._timeout = timeout
         self._log_labels = log_labels if log_labels is not None else []
         self._default_log_level = default_log_level
         self._log_messages = list()
+        self._max_stack_size = max_stack_size
 
     def log(self, message: str, log_level: LogLevel = None) -> None:
         if log_level is None:
@@ -79,6 +81,11 @@ class Loki:
         # Some Microcontrollers don't have nanoseconds support, thus, we take the seconds and append nine 0s to get the nanosecond timestamp
         timestamp_ns = f'{int(utime.time())}000000000'
         self._log_messages.append(LogMessage(timestamp_ns, message, log_level))
+
+        # If the max stack size is exceeded the 'oldest' log is removed from the stack
+        if len(self._log_messages) > self._max_stack_size:
+            oldest_log_message = sorted(self._log_messages, key=lambda log_message: log_message.timestamp_ns, reverse=True).pop()
+            self._log_messages.remove(oldest_log_message)
 
     def __get_labels(self, log_level: LogLevel) -> dict:
         labels = {'level': log_level.value}
