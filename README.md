@@ -12,7 +12,7 @@ Micropython library for sending logs to [Loki](https://grafana.com/oss/loki/)
 ## Installation
 
 The library can be installed using [upip](https://docs.micropython.org/en/latest/reference/glossary.html#term-upip) or
-[mip](https://docs.micropython.org/en/latest/reference/packages.html), ensure that the device is connected to the network.
+[mip](https://docs.micropython.org/en/latest/reference/packages.html). Ensure that the device is connected to the network.
 
 ### Installation using upip (Micropython < 1.19)
 
@@ -45,14 +45,14 @@ from micropython_loki import Loki
 loki = Loki('https://loki.example.org:3100')
 ```
 
-The following additional arguments can be provided:
+The following additional arguments may be provided:
 
-| Argument          | Description                                                                                               | Default         |
-|-------------------|-----------------------------------------------------------------------------------------------------------|-----------------|
-| log_labels        | List of `LogLabel`s. Each `LogLabel` is a key-value pair to enrich each log message with a label.         | []              |
-| default_log_level | Set the default log level. Instance of `LogLevel`.                                                        | `LogLevel.INFO` |
-| timeout           | Timeout in seconds for calls against the Loki-API.                                                        | 5               |
-| max_stack_size    | Maximum size of the log stack. If the stack size exceeds this value, the 'oldest' log message is dropped. | 50              |
+| Argument          | Description                                                                                                | Default         |
+|-------------------|------------------------------------------------------------------------------------------------------------|-----------------|
+| log_labels        | List of `LogLabel` instances. Each `LogLabel` is a key-value pair to enrich each log message with a label. | []              |
+| default_log_level | Set the default log level. Instance of `LogLevel`.                                                         | `LogLevel.INFO` |
+| timeout           | Timeout in seconds for calls against the Loki-API.                                                         | 5               |
+| max_stack_size    | Maximum size of the log stack. If the stack size exceeds this value, the 'oldest' log message is dropped.  | 50              |
 
 The following example creates a Loki-instance for calling the Loki-API at 'https://loki.example.org:3100', adding the labels 'app: important-app' and
 'version: 1.0.0' to each log message, setting the default log level to 'INFO', setting the timeout to 5 seconds and setting the max stack size to 20.
