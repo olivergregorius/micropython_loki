@@ -1,25 +1,33 @@
-from enum import Enum
-from uuid import UUID, uuid4
+import random
 
 import urequests
 import utime
 
 
-class LogLevel(Enum):
+class LogLevel:
     DEBUG = 'debug'
     INFO = 'info'
     WARN = 'warn'
     ERROR = 'error'
 
+    @staticmethod
+    def values():
+        return [
+            LogLevel.DEBUG,
+            LogLevel.INFO,
+            LogLevel.WARN,
+            LogLevel.ERROR
+        ]
+
 
 class LogMessage:
-    _id: UUID
+    _id: str
     _timestamp_ns: str
     _message: str
     _log_level: LogLevel
 
     def __init__(self, timestamp_ns: str, message: str, log_level: LogLevel):
-        self._id = uuid4()
+        self._id = self.__generate_id()
         self._timestamp_ns = timestamp_ns
         self._message = message
         self._log_level = log_level
@@ -39,6 +47,10 @@ class LogMessage:
     @property
     def log_level(self):
         return self._log_level
+
+    def __generate_id(self):
+        characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+        return ''.join(random.choice(characters) for _ in range(8))
 
 
 class LogLabel:
@@ -62,7 +74,7 @@ class Loki:
     _url: str
     _timeout: int
     _log_labels: list[LogLabel]
-    _default_log_level: LogLevel
+    _default_log_level: str
     _log_messages: list[LogMessage]
     _max_stack_size: int
 
@@ -87,13 +99,13 @@ class Loki:
             oldest_log_message = sorted(self._log_messages, key=lambda log_message: log_message.timestamp_ns, reverse=True).pop()
             self._log_messages.remove(oldest_log_message)
 
-    def __get_labels(self, log_level: LogLevel) -> dict:
-        labels = {'level': log_level.value}
+    def __get_labels(self, log_level: str) -> dict:
+        labels = {'level': log_level}
         labels.update({lbl.key: lbl.value for lbl in self._log_labels})
 
         return labels
 
-    def __get_log_messages(self, log_level: LogLevel) -> (list[list[str, str]], list[UUID]):
+    def __get_log_messages(self, log_level: str) -> (list[list[str, str]], list[str]):
         filtered_messages = list(filter(lambda log_message: log_message.log_level == log_level, self._log_messages))
 
         loki_messages = list([log_message.timestamp_ns, log_message.message] for log_message in filtered_messages)
@@ -101,11 +113,11 @@ class Loki:
 
         return loki_messages, log_message_ids
 
-    def __get_loki_streams_object(self) -> (list[dict], list[UUID]):
+    def __get_loki_streams_object(self) -> (list[dict], list[str]):
         loki_streams_object = list()
         collected_log_message_ids = list()
 
-        for log_level in LogLevel:
+        for log_level in LogLevel.values():
             loki_messages, log_message_ids = self.__get_log_messages(log_level)
             if len(loki_messages) > 0:
                 loki_streams_object.append(
