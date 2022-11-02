@@ -123,3 +123,11 @@ class TestMicropythonLoki(unittest.TestCase):
                                          json=expected_request_body,
                                          headers={'Content-Type': 'application/json'},
                                          timeout=5)
+
+    def test_calling_push_logs_when_no_logs_are_available_no_api_call_is_performed(self):
+        with patch('urequests.post') as post_mock:
+            self.loki._log_messages = []
+
+            self.loki.push_logs()
+
+            post_mock.assert_not_called()
