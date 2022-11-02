@@ -65,10 +65,10 @@ class Loki:
     _default_log_level: LogLevel
     _log_messages: list[LogMessage]
 
-    def __init__(self, url: str, log_labels: list[LogLabel], default_log_level=LogLevel.INFO, timeout=5):
+    def __init__(self, url: str, log_labels: list[LogLabel] = None, default_log_level=LogLevel.INFO, timeout=5):
         self._url = url
         self._timeout = timeout
-        self._log_labels = log_labels
+        self._log_labels = log_labels if log_labels is not None else []
         self._default_log_level = default_log_level
         self._log_messages = list()
 
