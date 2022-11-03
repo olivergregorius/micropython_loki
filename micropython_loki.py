@@ -140,12 +140,14 @@ class Loki:
             'streams': loki_streams_object
         }
         try:
-            with urequests.post(f'{self._url}/loki/api/v1/push', json=request_body, headers={'Content-Type': 'application/json'}, timeout=self._timeout) as response:
-                if response.status_code == 204:
-                    # All successfully pushed log messages are removed from the stack
-                    pushed_log_messages = list(filter(lambda log_message: log_message.id in collected_log_message_ids, self._log_messages))
-                    for pushed_log_message in pushed_log_messages:
-                        self._log_messages.remove(pushed_log_message)
+            response = urequests.post(f'{self._url}/loki/api/v1/push', json=request_body, headers={'Content-Type': 'application/json'}, timeout=self._timeout)
+            response_status_code = response.status_code
+            response.close()
+            if response_status_code == 204:
+                # All successfully pushed log messages are removed from the stack
+                pushed_log_messages = list(filter(lambda log_message: log_message.id in collected_log_message_ids, self._log_messages))
+                for pushed_log_message in pushed_log_messages:
+                    self._log_messages.remove(pushed_log_message)
         # Failures during log pushing should not affect the main application, thus ignore all errors
         except BaseException:
             pass
