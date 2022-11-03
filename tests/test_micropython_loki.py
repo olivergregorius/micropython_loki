@@ -61,7 +61,7 @@ class TestMicropythonLoki(unittest.TestCase):
 
     def test_calling_push_logs_successfully_removes_send_logs_from_stack(self):
         with patch('urequests.post') as post_mock:
-            post_mock.return_value.__enter__.return_value = urequests_mock.mock_post(204)
+            post_mock.return_value = urequests_mock.mock_post(204)
 
             self.loki._log_messages = [
                 LogMessage('1667343504000000000', 'Testmessage DEBUG', LogLevel.DEBUG),
@@ -74,16 +74,16 @@ class TestMicropythonLoki(unittest.TestCase):
 
     def test_calling_push_logs_failing_does_not_remove_logs_from_stack(self):
         with patch('urequests.post') as post_mock:
-            post_mock.return_value.__enter__.return_value = urequests_mock.mock_post(503)
+            post_mock.return_value = urequests_mock.mock_post(503)
 
-            self.loki._log_messages = [
-                LogMessage('1667343504000000000', 'Testmessage DEBUG', LogLevel.DEBUG),
-                LogMessage('1667343505000000000', 'Testmessage INFO - default log level', LogLevel.INFO)
-            ]
+        self.loki._log_messages = [
+            LogMessage('1667343504000000000', 'Testmessage DEBUG', LogLevel.DEBUG),
+            LogMessage('1667343505000000000', 'Testmessage INFO - default log level', LogLevel.INFO)
+        ]
 
-            self.loki.push_logs()
+        self.loki.push_logs()
 
-            self.assertEqual(2, len(self.loki._log_messages))
+        self.assertEqual(2, len(self.loki._log_messages))
 
     def test_request_body_matches_accepted_format(self):
         with patch('urequests.post') as post_mock:
