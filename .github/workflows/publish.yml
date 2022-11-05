@@ -25,12 +25,12 @@ jobs:
         run: |
           python -m setup sdist
 
-      - name: Publish package
-        env:
-          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.PYPI_APIKEY }}
-        run: |
-          twine upload dist/*.tar.gz
+#      - name: Publish package
+#        env:
+#          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+#          TWINE_PASSWORD: ${{ secrets.PYPI_APIKEY }}
+#        run: |
+#          twine upload dist/*.tar.gz
 
       - name: Install mpy-cross
         run: python -m pip install mpy-cross
