@@ -15,6 +15,10 @@ class TestMicropythonLoki(unittest.TestCase):
     def setUp(self) -> None:
         self.loki = Loki('http://localhost:3100', [LogLabel('app', 'testapp'), LogLabel('version', '1.0.0')], max_stack_size=5)
 
+    def test_loki_instantiation_with_invalid_log_level_raises_ValueError(self):
+        with self.assertRaises(ValueError):
+            Loki('http://localhost:3100', min_push_log_level='invalid_log_level')
+
     def test_calling_log_adds_log_messages_to_stack(self):
         self.loki.log('First DEBUG message - will be dropped due to exceeded max stack size', LogLevel.DEBUG)
         # Ensure first log message has another timestamp than the following by waiting for 1s
@@ -98,6 +102,44 @@ class TestMicropythonLoki(unittest.TestCase):
             self.assertIsNotNone(log_message.id)
             self.assertIsNotNone(log_message.timestamp_ns)
             self.assertEqual(log_message.message, 'Testmessage ERROR')
+
+    def test_calling_log_adds_only_log_messages_with_relevant_log_level_to_stack(self):
+        self.loki = Loki('http://localhost:3100', [LogLabel('app', 'testapp'), LogLabel('version', '1.0.0')], max_stack_size=5, min_push_log_level=LogLevel.WARN)
+
+        self.loki.debug('Testmessage DEBUG')
+        self.loki.info('Testmessage INFO')
+        self.loki.warn('Testmessage WARN')
+        self.loki.error('Testmessage ERROR')
+
+        self.assertEqual(2, len(self.loki._log_messages))
+
+        # DEBUG
+        debug_log_messages = list(filter(lambda log_message: log_message.log_level == LogLevel.DEBUG, self.loki._log_messages))
+        self.assertEqual(0, len(debug_log_messages))
+
+        # INFO
+        info_log_messages = list(filter(lambda log_message: log_message.log_level == LogLevel.INFO, self.loki._log_messages))
+        self.assertEqual(0, len(info_log_messages))
+
+        # WARN
+        warn_log_messages = list(filter(lambda log_message: log_message.log_level == LogLevel.WARN, self.loki._log_messages))
+        self.assertEqual(1, len(warn_log_messages))
+        for log_message in warn_log_messages:
+            self.assertIsNotNone(log_message.id)
+            self.assertIsNotNone(log_message.timestamp_ns)
+            self.assertEqual(log_message.message, 'Testmessage WARN')
+
+        # ERROR
+        error_log_messages = list(filter(lambda log_message: log_message.log_level == LogLevel.ERROR, self.loki._log_messages))
+        self.assertEqual(1, len(error_log_messages))
+        for log_message in error_log_messages:
+            self.assertIsNotNone(log_message.id)
+            self.assertIsNotNone(log_message.timestamp_ns)
+            self.assertEqual(log_message.message, 'Testmessage ERROR')
+
+    def test_calling_log_with_invalid_log_level_raises_ValueError(self):
+        with self.assertRaises(ValueError):
+            self.loki.log('Message', 'invalid_log_level')
 
     def test_calling_push_logs_successfully_removes_send_logs_from_stack(self):
         with patch('urequests.post') as post_mock:
