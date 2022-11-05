@@ -44,3 +44,4 @@ jobs:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: ./micropython_loki.mpy
           asset_name: micropython_loki.mpy
+          asset_content_type: application/octet-stream
