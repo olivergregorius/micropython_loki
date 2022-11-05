@@ -23,9 +23,3 @@ jobs:
       - name: Test package
         run: |
           python -m unittest discover tests
-
-      - name: Install mpy-cross
-        run: python -m pip install mpy-cross
-
-      - name: Cross compile library
-        run: python -m mpy_cross -Omax micropython_loki.py
