@@ -11,7 +11,7 @@ class LogLevel:
     ERROR = 'error'
 
     @staticmethod
-    def values():
+    def values() -> list[str]:
         return [
             LogLevel.DEBUG,
             LogLevel.INFO,
@@ -19,14 +19,32 @@ class LogLevel:
             LogLevel.ERROR
         ]
 
+    @staticmethod
+    def validate_log_level(log_level: str) -> None:
+        if log_level not in LogLevel.values():
+            raise ValueError('Invalid log level given, allowed values are "debug", "info", "warn" and "error"')
+
+    @staticmethod
+    def get_relevant_log_levels(min_log_level: str) -> list[str]:
+        LogLevel.validate_log_level(min_log_level)
+        if min_log_level == LogLevel.DEBUG:
+            return [LogLevel.DEBUG, LogLevel.INFO, LogLevel.WARN, LogLevel.ERROR]
+        elif min_log_level == LogLevel.INFO:
+            return [LogLevel.INFO, LogLevel.WARN, LogLevel.ERROR]
+        elif min_log_level == LogLevel.WARN:
+            return [LogLevel.WARN, LogLevel.ERROR]
+        else:
+            return [LogLevel.ERROR]
+
 
 class LogMessage:
     _id: str
     _timestamp_ns: str
     _message: str
-    _log_level: LogLevel
+    _log_level: str
 
-    def __init__(self, timestamp_ns: str, message: str, log_level: LogLevel):
+    def __init__(self, timestamp_ns: str, message: str, log_level: str):
+        LogLevel.validate_log_level(log_level)
         self._id = self.__generate_id()
         self._timestamp_ns = timestamp_ns
         self._message = message
@@ -48,7 +66,8 @@ class LogMessage:
     def log_level(self):
         return self._log_level
 
-    def __generate_id(self):
+    @staticmethod
+    def __generate_id():
         characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
         return ''.join(random.choice(characters) for _ in range(8))
 
@@ -77,18 +96,26 @@ class Loki:
     _default_log_level: str
     _log_messages: list[LogMessage]
     _max_stack_size: int
+    _min_push_log_level: str
 
-    def __init__(self, url: str, log_labels: list[LogLabel] = None, default_log_level=LogLevel.INFO, timeout=5, max_stack_size=50):
+    def __init__(self, url: str, log_labels: list[LogLabel] = None, default_log_level=LogLevel.INFO, timeout=5, max_stack_size=50, min_push_log_level=LogLevel.DEBUG):
+        LogLevel.validate_log_level(min_push_log_level)
         self._url = url
         self._timeout = timeout
         self._log_labels = log_labels if log_labels is not None else []
         self._default_log_level = default_log_level
         self._log_messages = list()
         self._max_stack_size = max_stack_size
+        self._min_push_log_level = min_push_log_level
 
-    def log(self, message: str, log_level: LogLevel = None) -> None:
+    def log(self, message: str, log_level: str = None) -> None:
         if log_level is None:
             log_level = self._default_log_level
+        LogLevel.validate_log_level(log_level)
+
+        # Drop the log message if log level is below minimum push log level to avoid filling up the stack
+        if log_level not in LogLevel.get_relevant_log_levels(self._min_push_log_level):
+            return
 
         # Some Microcontrollers don't have nanoseconds support, thus, we take the seconds and append nine 0s to get the nanosecond timestamp
         timestamp_ns = f'{int(utime.time())}000000000'
@@ -98,6 +125,18 @@ class Loki:
         if len(self._log_messages) > self._max_stack_size:
             oldest_log_message = sorted(self._log_messages, key=lambda log_message: log_message.timestamp_ns, reverse=True).pop()
             self._log_messages.remove(oldest_log_message)
+
+    def debug(self, message: str) -> None:
+        self.log(message, LogLevel.DEBUG)
+
+    def info(self, message: str) -> None:
+        self.log(message, LogLevel.INFO)
+
+    def warn(self, message: str) -> None:
+        self.log(message, LogLevel.WARN)
+
+    def error(self, message: str) -> None:
+        self.log(message, LogLevel.ERROR)
 
     def __get_labels(self, log_level: str) -> dict:
         labels = {'level': log_level}
