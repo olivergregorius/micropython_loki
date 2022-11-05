@@ -59,6 +59,46 @@ class TestMicropythonLoki(unittest.TestCase):
             self.assertIsNotNone(log_message.timestamp_ns)
             self.assertIn(log_message.message, ['Testmessage ERROR'])
 
+    def test_calling_convenience_method_works_as_expected(self):
+        self.loki.debug('Testmessage DEBUG')
+        self.loki.info('Testmessage INFO')
+        self.loki.warn('Testmessage WARN')
+        self.loki.error('Testmessage ERROR')
+
+        self.assertEqual(4, len(self.loki._log_messages))
+
+        # DEBUG
+        debug_log_messages = list(filter(lambda log_message: log_message.log_level == LogLevel.DEBUG, self.loki._log_messages))
+        self.assertEqual(1, len(debug_log_messages))
+        for log_message in debug_log_messages:
+            self.assertIsNotNone(log_message.id)
+            self.assertIsNotNone(log_message.timestamp_ns)
+            self.assertEqual(log_message.message, 'Testmessage DEBUG')
+
+        # INFO
+        info_log_messages = list(filter(lambda log_message: log_message.log_level == LogLevel.INFO, self.loki._log_messages))
+        self.assertEqual(1, len(info_log_messages))
+        for log_message in info_log_messages:
+            self.assertIsNotNone(log_message.id)
+            self.assertIsNotNone(log_message.timestamp_ns)
+            self.assertEqual(log_message.message, 'Testmessage INFO')
+
+        # WARN
+        warn_log_messages = list(filter(lambda log_message: log_message.log_level == LogLevel.WARN, self.loki._log_messages))
+        self.assertEqual(1, len(warn_log_messages))
+        for log_message in warn_log_messages:
+            self.assertIsNotNone(log_message.id)
+            self.assertIsNotNone(log_message.timestamp_ns)
+            self.assertEqual(log_message.message, 'Testmessage WARN')
+
+        # ERROR
+        error_log_messages = list(filter(lambda log_message: log_message.log_level == LogLevel.ERROR, self.loki._log_messages))
+        self.assertEqual(1, len(error_log_messages))
+        for log_message in error_log_messages:
+            self.assertIsNotNone(log_message.id)
+            self.assertIsNotNone(log_message.timestamp_ns)
+            self.assertEqual(log_message.message, 'Testmessage ERROR')
+
     def test_calling_push_logs_successfully_removes_send_logs_from_stack(self):
         with patch('urequests.post') as post_mock:
             post_mock.return_value = urequests_mock.mock_post(204)
