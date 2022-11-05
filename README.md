@@ -23,9 +23,21 @@ upip.install('micropython-loki')
 
 ### Installation using mip (Micropython >= 1.19)
 
+#### Py-file
+
 ```python
 import mip
 mip.install('github:olivergregorius/micropython_loki/micropython_loki.py')
+```
+
+#### Cross-compiled mpy-file
+
+**NOTE**: Set the release_version variable accordingly.
+
+```python
+import mip
+release_version='vX.Y.Z'
+mip.install(f'https://github.com/olivergregorius/micropython_loki/releases/download/{release_version}/micropython_loki.mpy')
 ```
 
 ## Usage
@@ -47,20 +59,22 @@ loki = Loki('https://loki.example.org:3100')
 
 The following additional arguments may be provided:
 
-| Argument          | Description                                                                                                | Default         |
-|-------------------|------------------------------------------------------------------------------------------------------------|-----------------|
-| log_labels        | List of `LogLabel` instances. Each `LogLabel` is a key-value pair to enrich each log message with a label. | []              |
-| default_log_level | Set the default log level. Instance of `LogLevel`.                                                         | `LogLevel.INFO` |
-| timeout           | Timeout in seconds for calls against the Loki-API.                                                         | 5               |
-| max_stack_size    | Maximum size of the log stack. If the stack size exceeds this value, the 'oldest' log message is dropped.  | 50              |
+| Argument           | Description                                                                                                | Default          |
+|--------------------|------------------------------------------------------------------------------------------------------------|------------------|
+| log_labels         | List of `LogLabel` instances. Each `LogLabel` is a key-value pair to enrich each log message with a label. | []               |
+| default_log_level  | Set the default log level. Instance of `LogLevel`.                                                         | `LogLevel.INFO`  |
+| timeout            | Timeout in seconds for calls against the Loki-API.                                                         | 5                |
+| max_stack_size     | Maximum size of the log stack. If the stack size exceeds this value, the 'oldest' log message is dropped.  | 50               |
+| min_push_log_level | Minimum log level of log messages to be pushed to Loki.                                                    | `LogLevel.DEBUG` |
 
 The following example creates a Loki-instance for calling the Loki-API at 'https://loki.example.org:3100', adding the labels 'app: important-app' and
-'version: 1.0.0' to each log message, setting the default log level to 'INFO', setting the timeout to 5 seconds and setting the max stack size to 20.
+'version: 1.0.0' to each log message, setting the default log level to 'INFO', setting the timeout to 5 seconds, setting the max stack size to 20 and only
+pushing logs to Loki with LogLevel.WARN or LogLevel.ERROR.
 
 ```python
 from micropython_loki import Loki, LogLabel, LogLevel
 
-loki = Loki('https://loki.example.org:3100', [LogLabel('app', 'important-app'), LogLabel('version', '1.0.0')], LogLevel.INFO, 5, 20)
+loki = Loki('https://loki.example.org:3100', [LogLabel('app', 'important-app'), LogLabel('version', '1.0.0')], LogLevel.INFO, 5, 20, LogLevel.WARN)
 ```
 
 To add a log message to the log-stack the method `log` is called, it takes the arguments `message` (required) containing the log message and `log_level`
@@ -78,6 +92,15 @@ if result == 1:
 
 The example above adds one log message of level 'INFO' (as set by default during Loki instantiation, the LogLevel can be omitted in the `log` call) and one log
 message of level 'WARN' (in case the value of result is 1).
+
+Convenience methods have been added to simplify adding log messages to the stack:
+
+```python
+loki.debug('Message with LogLevel.DEBUG')
+loki.info('Message with LogLevel.INFO')
+loki.warn('Message with LogLevel.WARN')
+loki.error('Message with LogLevel.ERROR')
+```
 
 To push the logs to Loki `push_logs` is called, this method takes no arguments:
 
