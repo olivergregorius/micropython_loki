@@ -121,10 +121,14 @@ class Loki:
         timestamp_ns = f'{int(utime.time())}000000000'
         self._log_messages.append(LogMessage(timestamp_ns, message, log_level))
 
-        # If the max stack size is exceeded the 'oldest' log is removed from the stack
-        if len(self._log_messages) > self._max_stack_size:
-            oldest_log_message = sorted(self._log_messages, key=lambda log_message: log_message.timestamp_ns, reverse=True).pop()
-            self._log_messages.remove(oldest_log_message)
+        try:
+            # If the max stack size is exceeded the 'oldest' log is removed from the stack
+            if len(self._log_messages) > self._max_stack_size:
+                oldest_log_message = sorted(self._log_messages, key=lambda log_message: log_message.timestamp_ns, reverse=True).pop()
+                self._log_messages.remove(oldest_log_message)
+        # Failures during log pushing should not affect the main application, thus ignore all errors
+        except BaseException:
+            pass
 
     def debug(self, message: str) -> None:
         self.log(message, LogLevel.DEBUG)
